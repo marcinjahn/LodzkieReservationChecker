@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.NodeServices;
 using Microsoft.Extensions.DependencyInjection;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
+using OpenQA.Selenium.Chromium;
 using OpenQA.Selenium.Support.UI;
 using WebDriverManager;
 using WebDriverManager.DriverConfigs.Impl;
@@ -57,6 +58,12 @@ WebDriver GetDriver()
     new DriverManager().SetUpDriver(new ChromeConfig());
     
     var options = new ChromeOptions();
+    options.AddArgument("--disable-logging");
+    options.AddArgument("--disable-dev-shm-usage");
+    options.AddArgument("--log-level=3");
+    options.AddArgument("--output=/dev/null");
+    options.AddArgument("--disable-extensions");
+    options.AddArgument("--disable-crash-reporter");
     return new ChromeDriver(options);
 }
 
