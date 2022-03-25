@@ -14,15 +14,16 @@ using WebDriverManager.DriverConfigs.Impl;
 
 const string URL = "https://www.rezerwacje.lodzkie.eu/";
 var DELAY = TimeSpan.FromMinutes(10);
-const string SOUND_FILE = "/Users/marcin/Music/Not-That-Weak-4.mp3";
+const string SOUND_FILE = "C:\\Users\\plmajah\\Music\\Not-That-Weak-4.mp3";
 
-using var driver = GetDriver();
+new DriverManager().SetUpDriver(new ChromeConfig());
 try
 {
     Console.WriteLine($"Trying to find a free slot at {URL}");
     
     while (true)
     {
+        using var driver = GetDriver();
         try
         {
             Console.WriteLine($"Starting to check at {DateTime.Now}");
@@ -41,6 +42,10 @@ try
             Console.WriteLine(e.Message);
             Console.WriteLine();
         }
+        finally
+        {
+            driver?.Quit();
+        }
         await Task.Delay(DELAY);
     }
 }
@@ -48,15 +53,9 @@ catch (Exception e)
 {
     Console.WriteLine(e.Message);
 }
-finally
-{
-    driver?.Quit();
-}
 
 WebDriver GetDriver()
-{
-    new DriverManager().SetUpDriver(new ChromeConfig());
-    
+{    
     var options = new ChromeOptions();
     options.AddArgument("--disable-logging");
     options.AddArgument("--disable-dev-shm-usage");
@@ -67,39 +66,39 @@ WebDriver GetDriver()
     return new ChromeDriver(options);
 }
 
-bool LookForAvailability(WebDriver webDriver)
+bool LookForAvailability(WebDriver driver)
 {
-    webDriver.Navigate().GoToUrl(URL);
-    Wait(() => webDriver.FindElement(By.ClassName("queue-button")));
-    var button1 = FindButton(webDriver, "queue-button",
+    driver.Navigate().GoToUrl(URL);
+    Wait(driver, () => driver.FindElement(By.ClassName("queue-button")));
+    var button1 = FindButton(driver, "queue-button",
         "POBYT CZASOWY I STAŁY (STUDENCI, MAŁŻEŃSTWA, INNE OKOLICZNOŚCI) - WGLĄD W SPRAWĘ");
     button1.Click();
 
-    Wait(() =>
+    Wait(driver, () =>
     {
-        var buttons = webDriver.FindElements(By.ClassName("queue-button"));
+        var buttons = driver.FindElements(By.ClassName("queue-button"));
         return buttons.Count == 2 ? buttons.First() : null;
     });
 
-    var button2 = FindButton(webDriver, "queue-button",
+    var button2 = FindButton(driver, "queue-button",
         "WYDZIAŁ SPRAW OBYWATELSKICH");
     button2.Click();
 
-    Wait(() => webDriver.FindElement(By.TagName("td")));
+    Wait(driver, () => driver.FindElement(By.TagName("td")));
 
-    var availableDate = GetAvailableDate(webDriver);
+    var availableDate = GetAvailableDate(driver);
 
-    if (availableDate is null)
+    if (!availableDate)
     {
-        SwitchMonth(webDriver);
+        SwitchMonth(driver);
         Thread.Sleep(2000); // calendar animation
-        availableDate = GetAvailableDate(webDriver);
+        availableDate = GetAvailableDate(driver);
     }
 
-    return availableDate is not null;
+    return availableDate;
 }
 
-void Wait(Func<IWebElement> func)
+void Wait(WebDriver driver, Func<IWebElement> func)
 {
     var wait = new WebDriverWait(driver, timeout: TimeSpan.FromSeconds(30))
     {
@@ -119,6 +118,8 @@ void Wait(Func<IWebElement> func)
 
         return null;
     });
+
+    Thread.Sleep(2000);
 }
 
 IWebElement FindButton(WebDriver driver, string className, string text)
@@ -128,11 +129,23 @@ IWebElement FindButton(WebDriver driver, string className, string text)
         .First(b => b.Text.Contains(text));
 }
 
-IWebElement GetAvailableDate(WebDriver driver)
+bool GetAvailableDate(WebDriver driver)
 {
-    return driver
-        .FindElements(By.TagName("td"))
-        .FirstOrDefault(b => b.FindElement(By.TagName("button")).Enabled);
+    var tds = driver
+        .FindElements(By.TagName("td"));
+
+    return tds
+        .FirstOrDefault(b => 
+        {
+            try {
+                var button = b.FindElement(By.TagName("button"));
+                return button?.Enabled == true;
+            }
+            catch(Exception)
+            {
+                return false;
+            }
+        }) is not null;
 }
 
 void SwitchMonth(WebDriver driver)
