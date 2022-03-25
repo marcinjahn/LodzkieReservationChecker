@@ -28,6 +28,7 @@ not have a cross-platform way of playing music, so I used the
 First, run the `setup.sh` script to install npm packages:
 
 ```sh
+cd LodzkieReservationChecker.App
 ./setup.sh
 ```
 
