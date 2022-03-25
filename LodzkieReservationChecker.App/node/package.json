@@ -1,0 +1,11 @@
+{
+  "name": "play-sound",
+  "version": "1.0.0",
+  "description": "Just plays music file",
+  "main": "play.js",
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "play-sound": "^1.1.5"
+  }
+}
